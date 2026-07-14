@@ -1,0 +1,190 @@
+:root {
+  --bg: #f4efe6;
+  --panel: #fbf8f1;
+  --ink: #2b2620;
+  --ink-soft: #6b6156;
+  --line: #e3daca;
+  --accent: #9c5b34;
+  --accent-soft: #c98a5e;
+  --shadow: rgba(60, 45, 25, 0.14);
+  --reader-max: 44rem;
+  font-size: 16px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #17140f;
+    --panel: #1f1b15;
+    --ink: #e9e2d4;
+    --ink-soft: #a79d8c;
+    --line: #332c22;
+    --accent: #d8955f;
+    --accent-soft: #b9713f;
+    --shadow: rgba(0, 0, 0, 0.5);
+  }
+}
+
+* { box-sizing: border-box; }
+
+html, body { margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Noto Serif SC", "Songti SC", "SimSun", Georgia, "Times New Roman", serif;
+  line-height: 1.75;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+.loading {
+  text-align: center;
+  color: var(--ink-soft);
+  padding: 6rem 1rem;
+}
+
+/* ---------- Layout ---------- */
+.wrap {
+  max-width: 60rem;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 4rem;
+}
+
+.site-header { text-align: center; margin-bottom: 2.5rem; }
+.site-header h1 {
+  font-size: 2rem;
+  margin: 0 0 0.35rem;
+  letter-spacing: 0.15em;
+}
+.site-header p { margin: 0; color: var(--ink-soft); font-size: 0.95rem; }
+
+/* ---------- Shelf ---------- */
+.author-group { margin-bottom: 2.75rem; }
+.author-group h2 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 0.5rem;
+  margin: 0 0 1.25rem;
+  letter-spacing: 0.08em;
+}
+
+.shelf {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+  gap: 1.5rem;
+}
+
+.book-card {
+  cursor: pointer;
+  border: none;
+  background: none;
+  padding: 0;
+  text-align: left;
+  font-family: inherit;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.cover {
+  aspect-ratio: 3 / 4.2;
+  border-radius: 4px 8px 8px 4px;
+  padding: 1rem 0.9rem;
+  color: #fdf7ee;
+  display: flex;
+  align-items: flex-end;
+  position: relative;
+  box-shadow: 0 6px 18px var(--shadow);
+  border-left: 4px solid rgba(0, 0, 0, 0.22);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  overflow: hidden;
+}
+.book-card:hover .cover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 26px var(--shadow);
+}
+.cover::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: linear-gradient(115deg, rgba(255,255,255,0.18), rgba(255,255,255,0) 45%);
+  pointer-events: none;
+}
+.cover-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: 0.05em;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.book-meta { display: flex; flex-direction: column; gap: 0.15rem; }
+.book-meta .t { font-size: 0.95rem; font-weight: 600; line-height: 1.35; }
+.book-meta .s { font-size: 0.8rem; color: var(--ink-soft); }
+
+/* ---------- Reader ---------- */
+.reader-bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1.25rem;
+}
+.reader-bar .back { font-size: 0.95rem; }
+.reader-bar .center {
+  flex: 1;
+  text-align: center;
+  font-size: 0.95rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.btn {
+  font-family: inherit;
+  font-size: 0.9rem;
+  color: #fff;
+  background: var(--accent);
+  border: none;
+  border-radius: 6px;
+  padding: 0.4rem 0.9rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn:hover { background: var(--accent-soft); }
+
+.reader {
+  max-width: var(--reader-max);
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 6rem;
+}
+.reader h1 {
+  font-size: 1.7rem;
+  letter-spacing: 0.06em;
+  margin: 0 0 0.4rem;
+}
+.reader .byline { color: var(--ink-soft); margin: 0 0 2.5rem; font-size: 0.95rem; }
+.reader article p {
+  margin: 0 0 1.4rem;
+  text-align: justify;
+  text-indent: 2em;
+  font-size: 1.12rem;
+  line-height: 2;
+}
+
+.error { text-align: center; color: var(--ink-soft); padding: 4rem 1rem; }
+
+@media (max-width: 480px) {
+  .shelf { grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr)); gap: 1.1rem; }
+  .reader article p { font-size: 1.05rem; }
+}
