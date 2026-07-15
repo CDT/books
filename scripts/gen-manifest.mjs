@@ -35,7 +35,11 @@ for (const author of readdirSync(booksDir)) {
   }
 }
 
-books.sort((a, b) => a.author.localeCompare(b.author) || a.title.localeCompare(b.title));
+books.sort((a, b) => {
+  if (a.author === "bs" && b.author !== "bs") return 1;
+  if (b.author === "bs" && a.author !== "bs") return -1;
+  return a.author.localeCompare(b.author) || a.title.localeCompare(b.title);
+});
 
 const out = { generatedAt: new Date().toISOString(), books };
 writeFileSync(join(root, "books.json"), JSON.stringify(out, null, 2) + "\n");
