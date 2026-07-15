@@ -1,6 +1,324 @@
 {
-  "generatedAt": "2026-07-14T06:29:34.694Z",
+  "generatedAt": "2026-07-15T06:48:39.546Z",
   "books": [
+    {
+      "title": "光明皇帝·业火",
+      "author": "江南",
+      "path": "books/江南/光明皇帝·业火 - 江南.txt",
+      "size": 797789
+    },
+    {
+      "title": "九州飘零书·商博良",
+      "author": "江南",
+      "path": "books/江南/九州飘零书·商博良 - 江南.txt",
+      "size": 458972
+    },
+    {
+      "title": "猎风",
+      "author": "江南",
+      "path": "books/江南/猎风 - 江南.txt",
+      "size": 70607
+    },
+    {
+      "title": "刹那公子",
+      "author": "江南",
+      "path": "books/江南/刹那公子 - 江南.txt",
+      "size": 87014
+    },
+    {
+      "title": "商博良",
+      "author": "江南",
+      "path": "books/江南/商博良 - 江南.txt",
+      "size": 575856
+    },
+    {
+      "title": "燕子焚",
+      "author": "江南",
+      "path": "books/江南/燕子焚 - 江南.txt",
+      "size": 7810
+    },
+    {
+      "title": "白垩纪往事",
+      "author": "刘慈欣",
+      "path": "books/刘慈欣/白垩纪往事 - 刘慈欣.txt",
+      "size": 77669
+    },
+    {
+      "title": "带上她的眼睛",
+      "author": "刘慈欣",
+      "path": "books/刘慈欣/带上她的眼睛 - 刘慈欣.txt",
+      "size": 26374
+    },
+    {
+      "title": "混沌蝴蝶",
+      "author": "刘慈欣",
+      "path": "books/刘慈欣/混沌蝴蝶 - 刘慈欣.txt",
+      "size": 40473
+    },
+    {
+      "title": "鲸歌",
+      "author": "刘慈欣",
+      "path": "books/刘慈欣/鲸歌 - 刘慈欣.txt",
+      "size": 21635
+    },
+    {
+      "title": "命运",
+      "author": "刘慈欣",
+      "path": "books/刘慈欣/命运 - 刘慈欣.txt",
+      "size": 17833
+    },
+    {
+      "title": "魔鬼积木",
+      "author": "刘慈欣",
+      "path": "books/刘慈欣/魔鬼积木 - 刘慈欣.txt",
+      "size": 206101
+    },
+    {
+      "title": "球状闪电",
+      "author": "刘慈欣",
+      "path": "books/刘慈欣/球状闪电 - 刘慈欣.txt",
+      "size": 568692
+    },
+    {
+      "title": "三体",
+      "author": "刘慈欣",
+      "path": "books/刘慈欣/三体 - 刘慈欣.txt",
+      "size": 590896
+    },
+    {
+      "title": "三体2：黑暗森林",
+      "author": "刘慈欣",
+      "path": "books/刘慈欣/三体2：黑暗森林 - 刘慈欣.txt",
+      "size": 1152918
+    },
+    {
+      "title": "三体3：死神永生",
+      "author": "刘慈欣",
+      "path": "books/刘慈欣/三体3：死神永生 - 刘慈欣.txt",
+      "size": 995768
+    },
+    {
+      "title": "赡养上帝",
+      "author": "刘慈欣",
+      "path": "books/刘慈欣/赡养上帝 - 刘慈欣.txt",
+      "size": 61414
+    },
+    {
+      "title": "诗云",
+      "author": "刘慈欣",
+      "path": "books/刘慈欣/诗云 - 刘慈欣.txt",
+      "size": 58158
+    },
+    {
+      "title": "时间移民",
+      "author": "刘慈欣",
+      "path": "books/刘慈欣/时间移民 - 刘慈欣.txt",
+      "size": 27899
+    },
+    {
+      "title": "吞食者",
+      "author": "刘慈欣",
+      "path": "books/刘慈欣/吞食者 - 刘慈欣.txt",
+      "size": 62682
+    },
+    {
+      "title": "微纪元",
+      "author": "刘慈欣",
+      "path": "books/刘慈欣/微纪元 - 刘慈欣.txt",
+      "size": 43961
+    },
+    {
+      "title": "不周记",
+      "author": "奇幻",
+      "path": "books/奇幻/不周记 - 树下野狐.txt",
+      "size": 423392
+    },
+    {
+      "title": "打喷嚏",
+      "author": "奇幻",
+      "path": "books/奇幻/打喷嚏 - 九把刀.txt",
+      "size": 351531
+    },
+    {
+      "title": "二十二夜",
+      "author": "奇幻",
+      "path": "books/奇幻/二十二夜 - 萧如瑟.txt",
+      "size": 36162
+    },
+    {
+      "title": "非人短章",
+      "author": "奇幻",
+      "path": "books/奇幻/非人短章 - 白饭如霜.txt",
+      "size": 89966
+    },
+    {
+      "title": "镜·归墟",
+      "author": "奇幻",
+      "path": "books/奇幻/镜·归墟 - 沧月.txt",
+      "size": 409426
+    },
+    {
+      "title": "镜·龙战",
+      "author": "奇幻",
+      "path": "books/奇幻/镜·龙战 - 沧月.txt",
+      "size": 933607
+    },
+    {
+      "title": "镜·辟天",
+      "author": "奇幻",
+      "path": "books/奇幻/镜·辟天 - 沧月.txt",
+      "size": 707491
+    },
+    {
+      "title": "镜·破军",
+      "author": "奇幻",
+      "path": "books/奇幻/镜·破军 - 沧月.txt",
+      "size": 489078
+    },
+    {
+      "title": "镜·双城",
+      "author": "奇幻",
+      "path": "books/奇幻/镜·双城 - 沧月.txt",
+      "size": 908646
+    },
+    {
+      "title": "骷髅的第三只眼睛",
+      "author": "奇幻",
+      "path": "books/奇幻/骷髅的第三只眼睛 - 可风.txt",
+      "size": 290841
+    },
+    {
+      "title": "蛮荒记",
+      "author": "奇幻",
+      "path": "books/奇幻/蛮荒记 - 树下野狐.txt",
+      "size": 3354947
+    },
+    {
+      "title": "梦旅人",
+      "author": "奇幻",
+      "path": "books/奇幻/梦旅人.txt",
+      "size": 10789
+    },
+    {
+      "title": "平安夜行抄",
+      "author": "奇幻",
+      "path": "books/奇幻/平安夜行抄 - 上海浩林.txt",
+      "size": 649410
+    },
+    {
+      "title": "神之右手",
+      "author": "奇幻",
+      "path": "books/奇幻/神之右手 - 沧月.txt",
+      "size": 106370
+    },
+    {
+      "title": "搜神记",
+      "author": "奇幻",
+      "path": "books/奇幻/搜神记 - 树下野狐.txt",
+      "size": 4383219
+    },
+    {
+      "title": "仙楚I：轩辕",
+      "author": "奇幻",
+      "path": "books/奇幻/仙楚I：轩辕 - 树下野狐.txt",
+      "size": 589346
+    },
+    {
+      "title": "仙楚II：道魔",
+      "author": "奇幻",
+      "path": "books/奇幻/仙楚II：道魔 - 树下野狐.txt",
+      "size": 577637
+    },
+    {
+      "title": "仙楚III：北斗",
+      "author": "奇幻",
+      "path": "books/奇幻/仙楚III：北斗 - 树下野狐.txt",
+      "size": 579902
+    },
+    {
+      "title": "妖言惑众",
+      "author": "奇幻",
+      "path": "books/奇幻/妖言惑众 - 萧如瑟.txt",
+      "size": 424956
+    },
+    {
+      "title": "羽·黯月之翼",
+      "author": "奇幻",
+      "path": "books/奇幻/羽·黯月之翼 - 沧月.txt",
+      "size": 741976
+    },
+    {
+      "title": "羽·赤炎之瞳",
+      "author": "奇幻",
+      "path": "books/奇幻/羽·赤炎之瞳 - 沧月.txt",
+      "size": 823309
+    },
+    {
+      "title": "羽·青空之蓝",
+      "author": "奇幻",
+      "path": "books/奇幻/羽·青空之蓝 - 沧月.txt",
+      "size": 773432
+    },
+    {
+      "title": "云梦泽传说",
+      "author": "奇幻",
+      "path": "books/奇幻/云梦泽传说 - 树下野狐.txt",
+      "size": 222419
+    },
+    {
+      "title": "在甘比亚钓水鬼的男人",
+      "author": "奇幻",
+      "path": "books/奇幻/在甘比亚钓水鬼的男人 - 九把刀.txt",
+      "size": 142692
+    },
+    {
+      "title": "织梦者",
+      "author": "奇幻",
+      "path": "books/奇幻/织梦者 - 沧月.txt",
+      "size": 466208
+    },
+    {
+      "title": "龙舟舞者",
+      "author": "沈樱樱",
+      "path": "books/沈樱樱/龙舟舞者 - 沈璎璎.txt",
+      "size": 4152
+    },
+    {
+      "title": "陌上花·药",
+      "author": "沈樱樱",
+      "path": "books/沈樱樱/陌上花·药 - 沈璎璎.txt",
+      "size": 36186
+    },
+    {
+      "title": "秦吉了",
+      "author": "沈樱樱",
+      "path": "books/沈樱樱/秦吉了 - 沈璎璎.txt",
+      "size": 10358
+    },
+    {
+      "title": "人倚楼",
+      "author": "沈樱樱",
+      "path": "books/沈樱樱/人倚楼 - 沈璎璎.txt",
+      "size": 10384
+    },
+    {
+      "title": "屠龙",
+      "author": "沈樱樱",
+      "path": "books/沈樱樱/屠龙 - 沈璎璎.txt",
+      "size": 40941
+    },
+    {
+      "title": "小敷山房",
+      "author": "沈樱樱",
+      "path": "books/沈樱樱/小敷山房 - 沈璎璎.txt",
+      "size": 2664
+    },
+    {
+      "title": "云散高唐",
+      "author": "沈樱樱",
+      "path": "books/沈樱樱/云散高唐 - 沈樱樱.txt",
+      "size": 485622
+    },
     {
       "title": "纯真年代2000之花落人间",
       "author": "涂沐",
@@ -12,6 +330,12 @@
       "author": "涂沐",
       "path": "books/涂沐/纯真年代2000之紫菀 - 涂沐.txt",
       "size": 11416
+    },
+    {
+      "title": "我的SM亲经历",
+      "author": "涂沐",
+      "path": "books/涂沐/我的SM亲经历 - 涂沐.txt",
+      "size": 6225
     },
     {
       "title": "诸色界之绯之月轮",
@@ -36,6 +360,223 @@
       "author": "涂沐",
       "path": "books/涂沐/诸色界之阴阳眼 - 涂沐.txt",
       "size": 83734
+    },
+    {
+      "title": "梦里花落知多少",
+      "author": "未分类",
+      "path": "books/未分类/梦里花落知多少 - 郭敬明.txt",
+      "size": 556624
+    },
+    {
+      "title": "沧海",
+      "author": "武侠",
+      "path": "books/武侠/沧海 - 凤歌.txt",
+      "size": 3218489
+    },
+    {
+      "title": "地老天荒",
+      "author": "武侠",
+      "path": "books/武侠/地老天荒 - 萧拂.txt",
+      "size": 131519
+    },
+    {
+      "title": "东风破",
+      "author": "武侠",
+      "path": "books/武侠/东风破 - 沧月.txt",
+      "size": 169097
+    },
+    {
+      "title": "昆仑",
+      "author": "武侠",
+      "path": "books/武侠/昆仑 - 凤歌.txt",
+      "size": 3214899
+    },
+    {
+      "title": "昆仑·前传：铁血天骄(修订版)",
+      "author": "武侠",
+      "path": "books/武侠/昆仑·前传：铁血天骄(修订版) - 凤歌.txt",
+      "size": 427198
+    },
+    {
+      "title": "昆仑(修订版)",
+      "author": "武侠",
+      "path": "books/武侠/昆仑(修订版) - 凤歌.txt",
+      "size": 2838980
+    },
+    {
+      "title": "随侯珠",
+      "author": "武侠",
+      "path": "books/武侠/随侯珠 - 萧拂.txt",
+      "size": 101095
+    },
+    {
+      "title": "天刀传奇",
+      "author": "武侠",
+      "path": "books/武侠/天刀传奇 - 晴川.txt",
+      "size": 161839
+    },
+    {
+      "title": "之二 风神镇",
+      "author": "武侠",
+      "path": "books/武侠/之二 风神镇.txt",
+      "size": 88775
+    },
+    {
+      "title": "之三 金陵残梦",
+      "author": "武侠",
+      "path": "books/武侠/之三 金陵残梦.txt",
+      "size": 77722
+    },
+    {
+      "title": "之四 吴钩霜雪明",
+      "author": "武侠",
+      "path": "books/武侠/之四 吴钩霜雪明.txt",
+      "size": 138648
+    },
+    {
+      "title": "之五 枕戈京华",
+      "author": "武侠",
+      "path": "books/武侠/之五 枕戈京华.txt",
+      "size": 154797
+    },
+    {
+      "title": "之一 吴村之战",
+      "author": "武侠",
+      "path": "books/武侠/之一 吴村之战.txt",
+      "size": 33160
+    },
+    {
+      "title": "变身孽情",
+      "author": "bs",
+      "path": "books/bs/变身孽情 - 流动的水.txt.enc",
+      "size": 1825447,
+      "protected": true
+    },
+    {
+      "title": "变身女儿行",
+      "author": "bs",
+      "path": "books/bs/变身女儿行 - 墨筱笑.txt.enc",
+      "size": 1670775,
+      "protected": true
+    },
+    {
+      "title": "变身情缘",
+      "author": "bs",
+      "path": "books/bs/变身情缘 - 深藏Blue.txt.enc",
+      "size": 1091083,
+      "protected": true
+    },
+    {
+      "title": "寒号鸟",
+      "author": "bs",
+      "path": "books/bs/寒号鸟 - 穿上褂子.txt.enc",
+      "size": 3971123,
+      "protected": true
+    },
+    {
+      "title": "梦醒难说再见",
+      "author": "bs",
+      "path": "books/bs/梦醒难说再见 - 青木林.txt.enc",
+      "size": 2907779,
+      "protected": true
+    },
+    {
+      "title": "难道我不是男生？ (TJ)- 问情",
+      "author": "bs",
+      "path": "books/bs/难道我不是男生？ (TJ)- 问情.txt.enc",
+      "size": 1718875,
+      "protected": true
+    },
+    {
+      "title": "孽之缘（原孽缘，已TJ）",
+      "author": "bs",
+      "path": "books/bs/孽之缘（原孽缘，已TJ） - 十四州.txt.enc",
+      "size": 1052035,
+      "protected": true
+    },
+    {
+      "title": "蔷薇咖啡馆",
+      "author": "bs",
+      "path": "books/bs/蔷薇咖啡馆 - 鬼鬼无邪气.txt.enc",
+      "size": 613099,
+      "protected": true
+    },
+    {
+      "title": "上帝是女孩(TJ)",
+      "author": "bs",
+      "path": "books/bs/上帝是女孩(TJ) - 王泰.txt.enc",
+      "size": 1105375,
+      "protected": true
+    },
+    {
+      "title": "夜明珠",
+      "author": "bs",
+      "path": "books/bs/夜明珠 - 伯伦希尔.txt.enc",
+      "size": 3610975,
+      "protected": true
+    },
+    {
+      "title": "夜族系列 - 逆流而下",
+      "author": "bs",
+      "path": "books/bs/夜族系列 - 逆流而下 - 七夜茶.txt.enc",
+      "size": 3101747,
+      "protected": true
+    },
+    {
+      "title": "夜族系列 - 顺逆同流",
+      "author": "bs",
+      "path": "books/bs/夜族系列 - 顺逆同流 - 七夜茶.txt.enc",
+      "size": 2957263,
+      "protected": true
+    },
+    {
+      "title": "DA系列 - 迪艾大作战 版本1(TJ)",
+      "author": "bs",
+      "path": "books/bs/DA系列 - 迪艾大作战 版本1(TJ) - 小崔.txt.enc",
+      "size": 77527,
+      "protected": true
+    },
+    {
+      "title": "DA系列 - 迪艾大作战 版本2(TJ)",
+      "author": "bs",
+      "path": "books/bs/DA系列 - 迪艾大作战 版本2(TJ) - 小崔.txt.enc",
+      "size": 116623,
+      "protected": true
+    },
+    {
+      "title": "DA系列 - 朱槿庄园(TJ)",
+      "author": "bs",
+      "path": "books/bs/DA系列 - 朱槿庄园(TJ) - 小崔.txt.enc",
+      "size": 273475,
+      "protected": true
+    },
+    {
+      "title": "DA系列之二 - 变身DA",
+      "author": "bs",
+      "path": "books/bs/DA系列之二 - 变身DA - 小崔.txt.enc",
+      "size": 1125143,
+      "protected": true
+    },
+    {
+      "title": "DA系列之三 - DA家族",
+      "author": "bs",
+      "path": "books/bs/DA系列之三 - DA家族 - 小崔.txt.enc",
+      "size": 1108911,
+      "protected": true
+    },
+    {
+      "title": "DA系列之一 - 莉莉斯的女儿",
+      "author": "bs",
+      "path": "books/bs/DA系列之一 - 莉莉斯的女儿 - 小崔.txt.enc",
+      "size": 1354951,
+      "protected": true
+    },
+    {
+      "title": "ITALY狂情曲",
+      "author": "bs",
+      "path": "books/bs/ITALY狂情曲 - 余宛宛.txt.enc",
+      "size": 315411,
+      "protected": true
     }
   ]
 }
