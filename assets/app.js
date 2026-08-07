@@ -206,7 +206,9 @@ function renderShelf() {
 
   const recentBooks = BOOKS
     .map((book, index) => ({ ...book, index, progress: readProgressRecord(book) }))
-    .filter((book) => book.progress && book.progress.ratio > 0.001 && book.progress.ratio < 0.999)
+    // A few pages into a long book is still under 0.1%, so anything past the
+    // opening page counts as being in progress.
+    .filter((book) => book.progress && book.progress.ratio > 0 && book.progress.ratio < 0.999)
     .sort((a, b) => b.progress.updatedAt - a.progress.updatedAt)
     .slice(0, 3);
 
@@ -437,7 +439,12 @@ function setupPagination(book, paragraphs, reader) {
   // Scroll offset where each page starts; consecutive pages never overlap.
   let pageOffsets = [0];
   let currentPage = 0;
-  let anchorRatio = 0;
+  // Where the reader is, held as a place in the text rather than a scroll
+  // offset or ratio, both of which mean something different once the viewport
+  // resizes. Only real navigation moves it, so relaying out repeatedly (as
+  // entering fullscreen does) always lands on the same words.
+  let anchor = null;
+  let pendingRatio = 0;
   let started = false;
   let fullscreen = false;
   let resizeTimer = 0;
@@ -479,10 +486,66 @@ function setupPagination(book, paragraphs, reader) {
     return bottoms;
   }
 
-  // Walk the text once and record where each page starts. A page break always
-  // lands on a line or paragraph boundary, so the next page opens on fresh
-  // content instead of repeating the lines already read.
-  function paginate() {
+  // Last block starting at or above `offset`.
+  function blockIndexAt(blocks, offset) {
+    let low = 0;
+    let high = blocks.length - 1;
+    let index = 0;
+    while (low <= high) {
+      const middle = (low + high) >> 1;
+      if (blocks[middle].top <= offset) {
+        index = middle;
+        low = middle + 1;
+      } else {
+        high = middle - 1;
+      }
+    }
+    return index;
+  }
+
+  // Last line or paragraph boundary in (start, limit], or 0 if there is none.
+  // Breaking here fills the page without splitting the line across the fold.
+  function breakBefore(blocks, base, start, limit) {
+    let breakAt = 0;
+    for (let i = blockIndexAt(blocks, start); i < blocks.length; i++) {
+      const block = blocks[i];
+      if (block.top >= limit) break;
+      if (block.bottom <= start) continue;
+      if (block.bottom <= limit) {
+        breakAt = Math.max(breakAt, block.bottom);
+        const following = blocks[i + 1];
+        // Prefer starting after the paragraph gap so it does not lead the page.
+        if (following && following.top <= limit) breakAt = Math.max(breakAt, following.top);
+      } else {
+        for (const bottom of lineBottoms(block.node, base)) {
+          if (bottom > start && bottom <= limit) breakAt = Math.max(breakAt, bottom);
+        }
+      }
+    }
+    return breakAt;
+  }
+
+  // First line or paragraph boundary at or after `offset`.
+  function breakAfter(blocks, base, offset) {
+    for (let i = blockIndexAt(blocks, offset); i < blocks.length; i++) {
+      const block = blocks[i];
+      if (block.top >= offset) return block.top;
+      if (block.bottom >= offset) {
+        for (const bottom of lineBottoms(block.node, base)) {
+          if (bottom >= offset) return bottom;
+        }
+        return block.bottom;
+      }
+    }
+    return offset;
+  }
+
+  // Record where each page starts. Breaks land on line or paragraph
+  // boundaries, so a page opens on content the previous one did not show.
+  // `alignAt` keeps the reader's place at the top of its page: the pages after
+  // it are measured forwards and the pages before it backwards, so a relayout
+  // (entering fullscreen, rotating the phone) never shifts the text being read.
+  function paginate(alignAt) {
     spacer.style.height = "0px";
     const height = viewport.clientHeight;
     if (height <= 0) return [0];
@@ -492,31 +555,30 @@ function setupPagination(book, paragraphs, reader) {
       return { node, top: rect.top - base, bottom: rect.bottom - base };
     });
     const content = viewport.scrollHeight;
-    const offsets = [0];
-    let start = 0;
-    let scan = 0;
     let guard = 0;
 
+    const first = alignAt > 0 && alignAt < content - height
+      ? breakBefore(blocks, base, alignAt - height, alignAt)
+      : 0;
+
+    // Backwards from the reader's page, so any part page ends up as page one
+    // rather than as a gap in the middle of the book.
+    const before = [];
+    let end = first;
+    while (end > 0 && guard++ < 100000) {
+      let start = end - height <= 0 ? 0 : breakAfter(blocks, base, end - height);
+      if (start >= end) start = Math.max(0, end - height);
+      before.push(start);
+      end = start;
+    }
+
+    const offsets = [...before.reverse(), first];
+    let start = first;
+    guard = 0;
     while (start + height < content - 1 && guard++ < 100000) {
-      const limit = start + height;
-      while (scan < blocks.length && blocks[scan].bottom <= start) scan++;
-      let breakAt = 0;
-      for (let i = scan; i < blocks.length; i++) {
-        const block = blocks[i];
-        if (block.top >= limit) break;
-        if (block.bottom <= limit) {
-          breakAt = Math.max(breakAt, block.bottom);
-          const following = blocks[i + 1];
-          // Prefer starting after the paragraph gap so it does not lead the page.
-          if (following && following.top <= limit) breakAt = Math.max(breakAt, following.top);
-        } else {
-          for (const bottom of lineBottoms(block.node, base)) {
-            if (bottom > start && bottom <= limit) breakAt = Math.max(breakAt, bottom);
-          }
-        }
-      }
+      let breakAt = breakBefore(blocks, base, start, start + height);
       // A single line taller than the viewport still has to advance somewhere.
-      if (!(breakAt > start)) breakAt = limit;
+      if (!(breakAt > start)) breakAt = start + height;
       offsets.push(breakAt);
       start = breakAt;
     }
@@ -527,11 +589,46 @@ function setupPagination(book, paragraphs, reader) {
     return offsets;
   }
 
+  // The paragraph under the top of the page, plus how far into it we are.
+  function captureAnchor() {
+    const blocks = article.children;
+    if (!blocks.length) return null;
+    const top = viewport.scrollTop;
+    const base = viewport.getBoundingClientRect().top - top;
+    let low = 0;
+    let high = blocks.length - 1;
+    let index = 0;
+    while (low <= high) {
+      const middle = (low + high) >> 1;
+      if (blocks[middle].getBoundingClientRect().top - base <= top) {
+        index = middle;
+        low = middle + 1;
+      } else {
+        high = middle - 1;
+      }
+    }
+    const rect = blocks[index].getBoundingClientRect();
+    const into = rect.height > 0 ? (top - (rect.top - base)) / rect.height : 0;
+    // Left unbounded above: on the padded last page the reader sits past the
+    // end of the final paragraph, and clamping there would resolve back to the
+    // page before it.
+    return { index, fraction: Math.max(0, into) };
+  }
+
+  // Where that place in the text sits in the current layout.
+  function anchorOffset() {
+    const node = anchor && article.children[anchor.index];
+    if (!node) return null;
+    const base = viewport.getBoundingClientRect().top - viewport.scrollTop;
+    const rect = node.getBoundingClientRect();
+    return rect.top - base + anchor.fraction * rect.height;
+  }
+
   function saveProgress() {
     if (!started) return;
     try {
       localStorage.setItem(progressKey(book), JSON.stringify({
-        ratio: anchorRatio,
+        ratio: currentRatio(),
         updatedAt: Date.now(),
       }));
     } catch {
@@ -566,51 +663,55 @@ function setupPagination(book, paragraphs, reader) {
     progress.style.width = `${((currentPage + 1) / total) * 100}%`;
     prev.disabled = currentPage === 0;
     next.disabled = currentPage === total - 1;
-    anchorRatio = currentRatio();
-    if (shouldSave) saveProgress();
+    // Only deliberate navigation moves the anchor; restoring a layout must not.
+    if (shouldSave) {
+      anchor = captureAnchor();
+      saveProgress();
+    }
   }
 
-  function showPageAtRatio(ratio) {
-    const target = ratio * textScrollMax();
-    let index = pageOffsets.length - 1;
-    if (ratio < 0.999) {
-      index = 0;
-      while (index + 1 < pageOffsets.length && pageOffsets[index + 1] <= target + 1) index++;
-    }
+  function showPageAtOffset(target) {
+    let index = 0;
+    while (index + 1 < pageOffsets.length && pageOffsets[index + 1] <= target + 1) index++;
     showPage(index, false);
   }
 
   function updateScrollProgress() {
-    anchorRatio = currentRatio();
-    const percent = Math.round(anchorRatio * 100);
+    const percent = Math.round(currentRatio() * 100);
     status.textContent = `已读 ${percent}%`;
     progress.style.width = `${percent}%`;
   }
 
-  function applyLayout(ratio) {
+  function applyLayout() {
+    const target = anchorOffset();
     if (mode === "scroll") {
       spacer.style.height = "0px";
       coverFold(0);
       prev.disabled = true;
       next.disabled = true;
-      viewport.scrollTop = ratio * Math.max(0, viewport.scrollHeight - viewport.clientHeight);
+      viewport.scrollTop = target === null
+        ? pendingRatio * Math.max(0, viewport.scrollHeight - viewport.clientHeight)
+        : target;
       updateScrollProgress();
     } else {
-      pageOffsets = paginate();
-      showPageAtRatio(ratio);
+      pageOffsets = paginate(target ?? undefined);
+      if (target !== null) showPageAtOffset(target);
+      else if (pendingRatio >= 0.999) showPage(pageOffsets.length - 1, false);
+      else showPageAtOffset(pendingRatio * textScrollMax());
     }
     started = true;
+    if (!anchor) anchor = captureAnchor();
   }
 
   function scheduleRelayout(delay = 160) {
     clearTimeout(resizeTimer);
     resizeTimer = window.setTimeout(() => {
       if (disposed || !reader.isConnected) return;
-      applyLayout(anchorRatio);
+      applyLayout();
     }, delay);
   }
 
-  function setMode(nextMode, ratio = anchorRatio, remember = true) {
+  function setMode(nextMode, remember = true) {
     mode = nextMode === "scroll" ? "scroll" : "page";
     reader.classList.toggle("scroll-mode", mode === "scroll");
     for (const button of modeButtons) {
@@ -620,7 +721,7 @@ function setupPagination(book, paragraphs, reader) {
       try { localStorage.setItem(READING_MODE_KEY, mode); } catch { /* Ignore storage failures. */ }
     }
     requestAnimationFrame(() => {
-      if (!disposed && reader.isConnected) applyLayout(ratio);
+      if (!disposed && reader.isConnected) applyLayout();
     });
   }
 
@@ -638,7 +739,13 @@ function setupPagination(book, paragraphs, reader) {
     showHint(fullscreen ? "全屏阅读 · 点击中央退出" : "已退出全屏");
     if (fullscreen) requestNativeFullscreen();
     else exitNativeFullscreen();
-    scheduleRelayout(120);
+    // Re-lay out in the next frame so the text settles with the new chrome
+    // rather than after a visible pause; the browser settling into or out of
+    // native fullscreen schedules another pass, which lands in the same place.
+    clearTimeout(resizeTimer);
+    requestAnimationFrame(() => {
+      if (!disposed && reader.isConnected) applyLayout();
+    });
   }
 
   function pageBy(direction) {
@@ -692,8 +799,7 @@ function setupPagination(book, paragraphs, reader) {
   function onViewportClick(event) {
     const origin = pointerStart;
     pointerStart = null;
-    // Ignore drags, double clicks and text selection: only a plain tap counts.
-    if (event.detail > 1) return;
+    // Ignore drags and text selection: only a plain tap counts.
     if (origin && Math.hypot(event.clientX - origin.x, event.clientY - origin.y) > TAP_SLOP) return;
     const selection = window.getSelection();
     if (selection && !selection.isCollapsed) return;
@@ -703,7 +809,10 @@ function setupPagination(book, paragraphs, reader) {
     const x = (event.clientX - rect.left) / rect.width;
     // Scrolling has no pages to turn, so the whole area toggles fullscreen.
     if (mode !== "page" || (x >= PAGE_TAP_ZONE && x <= 1 - PAGE_TAP_ZONE)) {
-      setFullscreen(!fullscreen);
+      // Turning pages has to survive quick repeat taps, but a second tap that
+      // the browser counts as a double click is a selection gesture, not a
+      // request to leave fullscreen again.
+      if (event.detail <= 1) setFullscreen(!fullscreen);
       return;
     }
     pageBy(x < PAGE_TAP_ZONE ? -1 : 1);
@@ -723,7 +832,10 @@ function setupPagination(book, paragraphs, reader) {
     if (mode !== "scroll") return;
     updateScrollProgress();
     clearTimeout(scrollSaveTimer);
-    scrollSaveTimer = window.setTimeout(saveProgress, 180);
+    scrollSaveTimer = window.setTimeout(() => {
+      anchor = captureAnchor();
+      saveProgress();
+    }, 180);
   }
 
   prev.addEventListener("click", () => pageBy(-1));
@@ -743,9 +855,9 @@ function setupPagination(book, paragraphs, reader) {
   reader.addEventListener("touchend", onTouchEnd, { passive: true });
 
   article.replaceChildren(...paragraphs.map(paragraphNode));
-  const savedRatio = readProgress(book);
+  pendingRatio = readProgress(book) ?? 0;
   const startReader = () => requestAnimationFrame(() => {
-    if (!disposed && reader.isConnected) setMode(mode, savedRatio ?? 0, false);
+    if (!disposed && reader.isConnected) setMode(mode, false);
   });
   if (document.fonts?.ready) document.fonts.ready.then(startReader, startReader);
   else startReader();
