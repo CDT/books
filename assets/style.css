@@ -498,6 +498,16 @@ body.reader-mode #app {
 }
 .reader.scroll-mode .page-btn { visibility: hidden; }
 
+/* Immersive fullscreen: tap the centre of the page to hide the chrome. */
+body.reading-fullscreen .reader-bar,
+body.reading-fullscreen .reader-heading,
+body.reading-fullscreen .reader-pager { display: none; }
+body.reading-fullscreen .reader {
+  grid-template-rows: minmax(0, 1fr);
+  width: 100%;
+  padding: max(0.75rem, env(safe-area-inset-top)) clamp(0.75rem, 3vw, 1.5rem) max(0.75rem, env(safe-area-inset-bottom));
+}
+
 .reader-pager {
   display: grid;
   grid-template-columns: 1fr auto 1fr;

@@ -399,6 +399,7 @@ function setupPagination(book, paragraphs, reader) {
   let resizeTimer = 0;
   let scrollSaveTimer = 0;
   let touchStart = null;
+  let lastSwipeAt = 0;
   let disposed = false;
   let mode = readReadingMode();
 
@@ -414,8 +415,9 @@ function setupPagination(book, paragraphs, reader) {
       ? Number.parseFloat(getComputedStyle(firstParagraph).lineHeight)
       : NaN;
     const lineHeight = Number.isFinite(parsedLineHeight) ? parsedLineHeight : 32;
-    const overlap = lineHeight * 1.5;
-    const step = Math.max(lineHeight * 3, viewport.clientHeight - overlap);
+    // Advance by a full viewport so a new page never repeats lines already
+    // shown at the bottom of the previous page.
+    const step = Math.max(lineHeight, viewport.clientHeight);
     const max = Math.max(0, viewport.scrollHeight - viewport.clientHeight);
     const total = max > 0 ? Math.ceil(max / step) + 1 : 1;
     return { max, step, total };
@@ -497,6 +499,30 @@ function setupPagination(book, paragraphs, reader) {
     showPage(currentPage + direction);
   }
 
+  function reflow() {
+    const ratio = currentRatio();
+    requestAnimationFrame(() => {
+      if (disposed || !reader.isConnected) return;
+      if (mode === "scroll") renderScrollMode(ratio);
+      else showPageAtRatio(ratio);
+    });
+  }
+
+  function toggleFullscreen() {
+    const active = document.body.classList.toggle("reading-fullscreen");
+    try {
+      if (active && !document.fullscreenElement) {
+        document.documentElement.requestFullscreen?.().catch(() => {});
+      } else if (!active && document.fullscreenElement) {
+        document.exitFullscreen?.().catch(() => {});
+      }
+    } catch {
+      // Fullscreen API may be unavailable; the immersive class still applies.
+    }
+    // Hiding the chrome changes the viewport height without firing resize.
+    reflow();
+  }
+
   function onKeyDown(event) {
     if (mode !== "page" || event.ctrlKey || event.metaKey || event.altKey) return;
     const target = event.target;
@@ -525,7 +551,26 @@ function setupPagination(book, paragraphs, reader) {
     const dy = touch.clientY - touchStart.y;
     touchStart = null;
     if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.2) {
+      lastSwipeAt = Date.now();
       pageBy(dx < 0 ? 1 : -1);
+    }
+  }
+
+  function onViewportClick(event) {
+    // A tap after a swipe is the same gesture; don't also toggle fullscreen.
+    if (Date.now() - lastSwipeAt < 500) return;
+    // Leave text selection alone.
+    if (String(window.getSelection?.() ?? "")) return;
+    const rect = viewport.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    if (x > rect.width / 3 && x < (rect.width * 2) / 3) toggleFullscreen();
+  }
+
+  function onFullscreenChange() {
+    // Sync the immersive chrome when the user leaves fullscreen (e.g. Esc).
+    if (!document.fullscreenElement && document.body.classList.contains("reading-fullscreen")) {
+      document.body.classList.remove("reading-fullscreen");
+      reflow();
     }
   }
 
@@ -555,8 +600,10 @@ function setupPagination(book, paragraphs, reader) {
   window.addEventListener("pagehide", saveProgress);
   window.addEventListener("resize", onResize);
   viewport.addEventListener("scroll", onScroll, { passive: true });
+  viewport.addEventListener("click", onViewportClick);
   reader.addEventListener("touchstart", onTouchStart, { passive: true });
   reader.addEventListener("touchend", onTouchEnd, { passive: true });
+  document.addEventListener("fullscreenchange", onFullscreenChange);
 
   article.replaceChildren(...paragraphs.map(paragraphNode));
   const savedRatio = readProgress(book);
@@ -575,9 +622,12 @@ function setupPagination(book, paragraphs, reader) {
     window.removeEventListener("pagehide", saveProgress);
     window.removeEventListener("resize", onResize);
     viewport.removeEventListener("scroll", onScroll);
+    viewport.removeEventListener("click", onViewportClick);
     reader.removeEventListener("touchstart", onTouchStart);
     reader.removeEventListener("touchend", onTouchEnd);
-    document.body.classList.remove("reader-mode");
+    document.removeEventListener("fullscreenchange", onFullscreenChange);
+    document.body.classList.remove("reader-mode", "reading-fullscreen");
+    if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
   };
 }
 
