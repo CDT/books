@@ -333,7 +333,9 @@ async function renderReader(index) {
       </header>
       <div class="page-viewport" tabindex="0" aria-label="正文阅读区">
         <article class="reader-page-content"><p class="loading">载入中…</p></article>
+        <div class="page-spacer" aria-hidden="true"></div>
       </div>
+      <div class="page-fold" aria-hidden="true"></div>
       <nav class="reader-pager" aria-label="翻页">
         <button class="page-btn prev" type="button" disabled aria-label="上一页">← 上一页</button>
         <div class="page-position">
@@ -342,6 +344,7 @@ async function renderReader(index) {
         </div>
         <button class="page-btn next" type="button" disabled aria-label="下一页">下一页 →</button>
       </nav>
+      <p class="reader-hint" role="status" aria-live="polite"></p>
     </main>`);
 
   app.replaceChildren(bar, reader);
@@ -363,6 +366,39 @@ async function renderReader(index) {
   } catch (err) {
     if (token !== routeToken) return;
     setupPagination(book, [`无法载入正文（${String(err.message)}）`], reader);
+  }
+}
+
+/* ---------- Tap zones ---------- */
+// Outer share of the reading area that turns pages; the middle band toggles
+// fullscreen.
+const PAGE_TAP_ZONE = 0.2;
+// A pointer may drift this far and still count as a tap rather than a drag.
+const TAP_SLOP = 12;
+
+function fullscreenElement() {
+  return document.fullscreenElement || document.webkitFullscreenElement || null;
+}
+
+function requestNativeFullscreen() {
+  const root = document.documentElement;
+  const request = root.requestFullscreen || root.webkitRequestFullscreen;
+  if (!request) return;
+  try {
+    // The immersive layout still applies when the browser refuses fullscreen.
+    Promise.resolve(request.call(root)).catch(() => {});
+  } catch {
+    // Older engines throw synchronously instead of rejecting.
+  }
+}
+
+function exitNativeFullscreen() {
+  const exit = document.exitFullscreen || document.webkitExitFullscreen;
+  if (!exit || !fullscreenElement()) return;
+  try {
+    Promise.resolve(exit.call(document)).catch(() => {});
+  } catch {
+    // Ignore engines that refuse to leave fullscreen programmatically.
   }
 }
 
@@ -390,15 +426,25 @@ function readProgress(book) {
 function setupPagination(book, paragraphs, reader) {
   const viewport = reader.querySelector(".page-viewport");
   const article = reader.querySelector(".reader-page-content");
+  const spacer = reader.querySelector(".page-spacer");
+  const fold = reader.querySelector(".page-fold");
+  const hint = reader.querySelector(".reader-hint");
   const prev = reader.querySelector(".prev");
   const next = reader.querySelector(".next");
   const status = reader.querySelector(".page-status");
   const progress = reader.querySelector(".page-track span");
   const modeButtons = [...reader.querySelectorAll("[data-mode]")];
+  // Scroll offset where each page starts; consecutive pages never overlap.
+  let pageOffsets = [0];
   let currentPage = 0;
+  let anchorRatio = 0;
+  let started = false;
+  let fullscreen = false;
   let resizeTimer = 0;
   let scrollSaveTimer = 0;
+  let hintTimer = 0;
   let touchStart = null;
+  let pointerStart = null;
   let disposed = false;
   let mode = readReadingMode();
 
@@ -408,28 +454,84 @@ function setupPagination(book, paragraphs, reader) {
     return p;
   }
 
-  function pageMetrics() {
-    const firstParagraph = article.querySelector("p");
-    const parsedLineHeight = firstParagraph
-      ? Number.parseFloat(getComputedStyle(firstParagraph).lineHeight)
-      : NaN;
-    const lineHeight = Number.isFinite(parsedLineHeight) ? parsedLineHeight : 32;
-    const overlap = lineHeight * 1.5;
-    const step = Math.max(lineHeight * 3, viewport.clientHeight - overlap);
-    const max = Math.max(0, viewport.scrollHeight - viewport.clientHeight);
-    const total = max > 0 ? Math.ceil(max / step) + 1 : 1;
-    return { max, step, total };
+  function spacerHeight() {
+    return spacer.offsetHeight;
+  }
+
+  // Scroll range of the text itself, ignoring the padding that pins the final page.
+  function textScrollMax() {
+    return Math.max(0, viewport.scrollHeight - spacerHeight() - viewport.clientHeight);
   }
 
   function currentRatio() {
-    const { max } = pageMetrics();
+    const max = textScrollMax();
     return max > 0 ? Math.min(1, viewport.scrollTop / max) : 0;
   }
 
+  // Bottom edge of every line box inside a paragraph, in scroll coordinates.
+  function lineBottoms(node, base) {
+    const range = document.createRange();
+    range.selectNodeContents(node);
+    const bottoms = [];
+    for (const rect of range.getClientRects()) {
+      if (rect.height > 0) bottoms.push(rect.bottom - base);
+    }
+    return bottoms;
+  }
+
+  // Walk the text once and record where each page starts. A page break always
+  // lands on a line or paragraph boundary, so the next page opens on fresh
+  // content instead of repeating the lines already read.
+  function paginate() {
+    spacer.style.height = "0px";
+    const height = viewport.clientHeight;
+    if (height <= 0) return [0];
+    const base = viewport.getBoundingClientRect().top - viewport.scrollTop;
+    const blocks = [...article.children].map((node) => {
+      const rect = node.getBoundingClientRect();
+      return { node, top: rect.top - base, bottom: rect.bottom - base };
+    });
+    const content = viewport.scrollHeight;
+    const offsets = [0];
+    let start = 0;
+    let scan = 0;
+    let guard = 0;
+
+    while (start + height < content - 1 && guard++ < 100000) {
+      const limit = start + height;
+      while (scan < blocks.length && blocks[scan].bottom <= start) scan++;
+      let breakAt = 0;
+      for (let i = scan; i < blocks.length; i++) {
+        const block = blocks[i];
+        if (block.top >= limit) break;
+        if (block.bottom <= limit) {
+          breakAt = Math.max(breakAt, block.bottom);
+          const following = blocks[i + 1];
+          // Prefer starting after the paragraph gap so it does not lead the page.
+          if (following && following.top <= limit) breakAt = Math.max(breakAt, following.top);
+        } else {
+          for (const bottom of lineBottoms(block.node, base)) {
+            if (bottom > start && bottom <= limit) breakAt = Math.max(breakAt, bottom);
+          }
+        }
+      }
+      // A single line taller than the viewport still has to advance somewhere.
+      if (!(breakAt > start)) breakAt = limit;
+      offsets.push(breakAt);
+      start = breakAt;
+    }
+
+    // Pad the bottom so the final page can start on its own break instead of
+    // being pulled up into content the previous page already showed.
+    spacer.style.height = `${Math.max(0, Math.round(start + height - content))}px`;
+    return offsets;
+  }
+
   function saveProgress() {
+    if (!started) return;
     try {
       localStorage.setItem(progressKey(book), JSON.stringify({
-        ratio: currentRatio(),
+        ratio: anchorRatio,
         updatedAt: Date.now(),
       }));
     } catch {
@@ -437,47 +539,78 @@ function setupPagination(book, paragraphs, reader) {
     }
   }
 
+  // A page break sits above the line that would straddle the fold, so that
+  // line's top edge still pokes into the bottom of the page. Cover the strip
+  // instead of letting a sliver of the next page's first line show through.
+  function coverFold(height) {
+    if (height <= 0.5) {
+      fold.style.display = "none";
+      return;
+    }
+    const rect = viewport.getBoundingClientRect();
+    fold.style.display = "block";
+    fold.style.left = `${rect.left + 1}px`;
+    fold.style.width = `${Math.max(0, rect.width - 2)}px`;
+    fold.style.top = `${rect.bottom - 1 - height}px`;
+    fold.style.height = `${height}px`;
+  }
+
   function showPage(index, shouldSave = true) {
-    const { max, step, total } = pageMetrics();
+    const total = pageOffsets.length;
     currentPage = Math.min(total - 1, Math.max(0, index));
-    viewport.scrollTop = currentPage === total - 1
-      ? max
-      : Math.min(max, currentPage * step);
+    viewport.scrollTop = pageOffsets[currentPage];
+    coverFold(currentPage + 1 < total
+      ? pageOffsets[currentPage] + viewport.clientHeight - pageOffsets[currentPage + 1]
+      : 0);
     status.textContent = `${currentPage + 1} / ${total}`;
     progress.style.width = `${((currentPage + 1) / total) * 100}%`;
     prev.disabled = currentPage === 0;
     next.disabled = currentPage === total - 1;
+    anchorRatio = currentRatio();
     if (shouldSave) saveProgress();
   }
 
   function showPageAtRatio(ratio) {
-    const { max, step, total } = pageMetrics();
-    const target = ratio * max;
-    const index = ratio >= 0.999
-      ? total - 1
-      : Math.round(target / step);
+    const target = ratio * textScrollMax();
+    let index = pageOffsets.length - 1;
+    if (ratio < 0.999) {
+      index = 0;
+      while (index + 1 < pageOffsets.length && pageOffsets[index + 1] <= target + 1) index++;
+    }
     showPage(index, false);
   }
 
   function updateScrollProgress() {
-    const ratio = currentRatio();
-    const percent = Math.round(ratio * 100);
+    anchorRatio = currentRatio();
+    const percent = Math.round(anchorRatio * 100);
     status.textContent = `已读 ${percent}%`;
     progress.style.width = `${percent}%`;
   }
 
-  function renderScrollMode(ratio) {
-    prev.disabled = true;
-    next.disabled = true;
-    requestAnimationFrame(() => {
-      if (disposed || mode !== "scroll") return;
-      const max = Math.max(0, viewport.scrollHeight - viewport.clientHeight);
-      viewport.scrollTop = ratio * max;
+  function applyLayout(ratio) {
+    if (mode === "scroll") {
+      spacer.style.height = "0px";
+      coverFold(0);
+      prev.disabled = true;
+      next.disabled = true;
+      viewport.scrollTop = ratio * Math.max(0, viewport.scrollHeight - viewport.clientHeight);
       updateScrollProgress();
-    });
+    } else {
+      pageOffsets = paginate();
+      showPageAtRatio(ratio);
+    }
+    started = true;
   }
 
-  function setMode(nextMode, ratio = currentRatio(), remember = true) {
+  function scheduleRelayout(delay = 160) {
+    clearTimeout(resizeTimer);
+    resizeTimer = window.setTimeout(() => {
+      if (disposed || !reader.isConnected) return;
+      applyLayout(anchorRatio);
+    }, delay);
+  }
+
+  function setMode(nextMode, ratio = anchorRatio, remember = true) {
     mode = nextMode === "scroll" ? "scroll" : "page";
     reader.classList.toggle("scroll-mode", mode === "scroll");
     for (const button of modeButtons) {
@@ -486,10 +619,26 @@ function setupPagination(book, paragraphs, reader) {
     if (remember) {
       try { localStorage.setItem(READING_MODE_KEY, mode); } catch { /* Ignore storage failures. */ }
     }
-    if (mode === "scroll") renderScrollMode(ratio);
-    else requestAnimationFrame(() => {
-      if (!disposed && mode === "page") showPageAtRatio(ratio);
+    requestAnimationFrame(() => {
+      if (!disposed && reader.isConnected) applyLayout(ratio);
     });
+  }
+
+  function showHint(message) {
+    hint.textContent = message;
+    hint.classList.add("is-visible");
+    clearTimeout(hintTimer);
+    hintTimer = window.setTimeout(() => hint.classList.remove("is-visible"), 1800);
+  }
+
+  function setFullscreen(nextFullscreen) {
+    if (fullscreen === nextFullscreen) return;
+    fullscreen = nextFullscreen;
+    document.body.classList.toggle("reader-fullscreen", fullscreen);
+    showHint(fullscreen ? "全屏阅读 · 点击中央退出" : "已退出全屏");
+    if (fullscreen) requestNativeFullscreen();
+    else exitNativeFullscreen();
+    scheduleRelayout(120);
   }
 
   function pageBy(direction) {
@@ -498,6 +647,10 @@ function setupPagination(book, paragraphs, reader) {
   }
 
   function onKeyDown(event) {
+    if (event.key === "Escape" && fullscreen) {
+      setFullscreen(false);
+      return;
+    }
     if (mode !== "page" || event.ctrlKey || event.metaKey || event.altKey) return;
     const target = event.target;
     if (target instanceof HTMLElement && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName))) return;
@@ -512,9 +665,12 @@ function setupPagination(book, paragraphs, reader) {
   }
 
   function onTouchStart(event) {
-    if (mode !== "page") return;
     const touch = event.touches[0];
-    if (touch) touchStart = { x: touch.clientX, y: touch.clientY };
+    if (!touch) return;
+    // Also seeds the tap origin where pointer events are unavailable, so a
+    // swipe never counts as a tap on the paging zones.
+    pointerStart = { x: touch.clientX, y: touch.clientY };
+    if (mode === "page") touchStart = { x: touch.clientX, y: touch.clientY };
   }
 
   function onTouchEnd(event) {
@@ -529,21 +685,45 @@ function setupPagination(book, paragraphs, reader) {
     }
   }
 
+  function onPointerDown(event) {
+    pointerStart = { x: event.clientX, y: event.clientY };
+  }
+
+  function onViewportClick(event) {
+    const origin = pointerStart;
+    pointerStart = null;
+    // Ignore drags, double clicks and text selection: only a plain tap counts.
+    if (event.detail > 1) return;
+    if (origin && Math.hypot(event.clientX - origin.x, event.clientY - origin.y) > TAP_SLOP) return;
+    const selection = window.getSelection();
+    if (selection && !selection.isCollapsed) return;
+
+    const rect = viewport.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const x = (event.clientX - rect.left) / rect.width;
+    // Scrolling has no pages to turn, so the whole area toggles fullscreen.
+    if (mode !== "page" || (x >= PAGE_TAP_ZONE && x <= 1 - PAGE_TAP_ZONE)) {
+      setFullscreen(!fullscreen);
+      return;
+    }
+    pageBy(x < PAGE_TAP_ZONE ? -1 : 1);
+  }
+
+  function onFullscreenChange() {
+    // Leaving fullscreen through the browser (Esc, F11) must drop the layout too.
+    if (fullscreen && !fullscreenElement()) setFullscreen(false);
+    else scheduleRelayout(120);
+  }
+
+  function onResize() {
+    scheduleRelayout();
+  }
+
   function onScroll() {
     if (mode !== "scroll") return;
     updateScrollProgress();
     clearTimeout(scrollSaveTimer);
     scrollSaveTimer = window.setTimeout(saveProgress, 180);
-  }
-
-  function onResize() {
-    const ratio = currentRatio();
-    clearTimeout(resizeTimer);
-    resizeTimer = window.setTimeout(() => {
-      if (disposed || !reader.isConnected) return;
-      if (mode === "scroll") renderScrollMode(ratio);
-      else showPageAtRatio(ratio);
-    }, 160);
   }
 
   prev.addEventListener("click", () => pageBy(-1));
@@ -554,7 +734,11 @@ function setupPagination(book, paragraphs, reader) {
   window.addEventListener("keydown", onKeyDown);
   window.addEventListener("pagehide", saveProgress);
   window.addEventListener("resize", onResize);
+  document.addEventListener("fullscreenchange", onFullscreenChange);
+  document.addEventListener("webkitfullscreenchange", onFullscreenChange);
   viewport.addEventListener("scroll", onScroll, { passive: true });
+  viewport.addEventListener("pointerdown", onPointerDown);
+  viewport.addEventListener("click", onViewportClick);
   reader.addEventListener("touchstart", onTouchStart, { passive: true });
   reader.addEventListener("touchend", onTouchEnd, { passive: true });
 
@@ -571,12 +755,19 @@ function setupPagination(book, paragraphs, reader) {
     disposed = true;
     clearTimeout(resizeTimer);
     clearTimeout(scrollSaveTimer);
+    clearTimeout(hintTimer);
     window.removeEventListener("keydown", onKeyDown);
     window.removeEventListener("pagehide", saveProgress);
     window.removeEventListener("resize", onResize);
+    document.removeEventListener("fullscreenchange", onFullscreenChange);
+    document.removeEventListener("webkitfullscreenchange", onFullscreenChange);
     viewport.removeEventListener("scroll", onScroll);
+    viewport.removeEventListener("pointerdown", onPointerDown);
+    viewport.removeEventListener("click", onViewportClick);
     reader.removeEventListener("touchstart", onTouchStart);
     reader.removeEventListener("touchend", onTouchEnd);
+    exitNativeFullscreen();
+    document.body.classList.remove("reader-fullscreen");
     document.body.classList.remove("reader-mode");
   };
 }

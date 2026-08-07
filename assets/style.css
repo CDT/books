@@ -489,6 +489,15 @@ body.reader-mode #app {
   text-indent: 2em;
   overflow-wrap: anywhere;
 }
+.page-spacer { height: 0; }
+.page-fold {
+  position: fixed;
+  z-index: 5;
+  display: none;
+  background: var(--panel-strong);
+  border-radius: 0 0 11px 11px;
+  pointer-events: none;
+}
 .reader.scroll-mode .page-viewport {
   overflow-x: hidden;
   overflow-y: auto;
@@ -538,6 +547,48 @@ body.reader-mode #app {
   border-radius: 999px;
 }
 .page-track span { display: block; width: 0; height: 100%; background: var(--accent); }
+
+/* ---------- Fullscreen reading ---------- */
+.reader-hint {
+  position: fixed;
+  z-index: 20;
+  bottom: clamp(3.6rem, 12vh, 6rem);
+  left: 50%;
+  margin: 0;
+  padding: 0.5rem 1rem;
+  color: var(--panel-strong);
+  background: color-mix(in srgb, var(--ink) 82%, transparent);
+  border-radius: 999px;
+  font-family: system-ui, sans-serif;
+  font-size: 0.74rem;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translate(-50%, 0.4rem);
+  transition: opacity 0.22s ease, transform 0.22s ease;
+  pointer-events: none;
+}
+.reader-hint.is-visible { opacity: 1; transform: translate(-50%, 0); }
+
+body.reader-fullscreen { background: var(--panel-strong); }
+body.reader-fullscreen .reader-bar,
+body.reader-fullscreen .reader-heading { display: none; }
+body.reader-fullscreen #app { grid-template-rows: minmax(0, 1fr); }
+body.reader-fullscreen .reader {
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 0.35rem;
+  padding-top: max(0.45rem, env(safe-area-inset-top));
+}
+body.reader-fullscreen .page-viewport {
+  padding-block: clamp(0.75rem, 2.5vh, 1.6rem);
+  background: transparent;
+  border-color: transparent;
+  border-radius: 0;
+  box-shadow: none;
+}
+body.reader-fullscreen .page-fold { border-radius: 0; }
+body.reader-fullscreen .reader-pager { min-height: 2.4rem; opacity: 0.7; }
+body.reader-fullscreen .reader-pager:hover, body.reader-fullscreen .reader-pager:focus-within { opacity: 1; }
 
 /* ---------- Password gate ---------- */
 .password-overlay {
@@ -633,6 +684,7 @@ body.reader-mode #app {
   .reader-heading { padding-inline: 0.15rem; }
   .reading-mode-switch button { min-width: 2.9rem; padding-inline: 0.5rem; }
   .page-viewport { border-radius: 8px; }
+  .page-fold { border-radius: 0 0 7px 7px; }
   .reader-page-content p { line-height: 1.85; }
   .reader-pager { gap: 0.5rem; }
   .page-position, .page-track { min-width: 5rem; width: 5rem; }
@@ -648,7 +700,7 @@ body.reader-mode #app {
 @media print {
   body.reader-mode { height: auto; overflow: visible; }
   body.reader-mode #app { display: block; height: auto; }
-  .reader-bar, .reader-pager { display: none; }
+  .reader-bar, .reader-pager, .reader-hint, .page-fold { display: none !important; }
   .reader { display: block; width: 100%; padding: 0; }
   .page-viewport { overflow: visible; border: 0; box-shadow: none; }
   .reader-page-content { height: auto; overflow: visible; }
