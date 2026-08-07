@@ -656,9 +656,20 @@ function setupPagination(book, paragraphs, reader) {
     const total = pageOffsets.length;
     currentPage = Math.min(total - 1, Math.max(0, index));
     viewport.scrollTop = pageOffsets[currentPage];
-    coverFold(currentPage + 1 < total
-      ? pageOffsets[currentPage] + viewport.clientHeight - pageOffsets[currentPage + 1]
-      : 0);
+    if (currentPage + 1 < total) {
+      // Line boxes can end on fractional pixels, while a browser may round a
+      // programmatic scroll position. Work from the position it actually
+      // chose and round the mask outwards: otherwise a fraction of the next
+      // page's first line can show at the fold, but paging forward still
+      // starts below it.
+      const hiddenHeight = Math.max(
+        0,
+        Math.ceil(viewport.scrollTop + viewport.clientHeight - pageOffsets[currentPage + 1]),
+      );
+      coverFold(hiddenHeight);
+    } else {
+      coverFold(0);
+    }
     status.textContent = `${currentPage + 1} / ${total}`;
     progress.style.width = `${((currentPage + 1) / total) * 100}%`;
     prev.disabled = currentPage === 0;
